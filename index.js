@@ -35,7 +35,12 @@ const run = async () => {
       }
       const cursor = taskCollection.find(query);
       const tasks = await cursor.toArray();
-      res.send({ status: true, data: tasks });
+      res.send({
+        status: true,
+        data: tasks.sort((a, b) =>
+          a.isCompleted === b.isCompleted ? 0 : a.isCompleted ? 1 : -1
+        ),
+      });
     });
 
     app.post("/task", async (req, res) => {
@@ -54,27 +59,42 @@ const run = async () => {
     app.delete("/task/:id", async (req, res) => {
       const id = req.params.id;
       const result = await taskCollection.deleteOne({ _id: ObjectId(id) });
-      // console.log(result);
-      res.send(result);
+      res.send({ status: true, message: "Successfully Deleted", data: result });
     });
 
     // status update
     app.put("/task/:id", async (req, res) => {
       const id = req.params.id;
-      console.log(id);
       const task = req.body;
       const filter = { _id: ObjectId(id) };
       const updateDoc = {
         $set: {
           isCompleted: task.isCompleted,
           title: task.title,
-          description: task.description,
+          discription: task.discription,
           priority: task.priority,
         },
       };
       const options = { upsert: true };
       const result = await taskCollection.updateOne(filter, updateDoc, options);
-      res.json(result);
+      res.json({ status: true, message: "Successfully Updated", data: result });
+    });
+    app.put("/isCompleted/:id", async (req, res) => {
+      const { id } = req.params;
+      const task = req.body;
+      const filter = { _id: ObjectId(id) };
+      const updateDoc = {
+        $set: {
+          isCompleted: !task.status,
+        },
+      };
+      const options = { upsert: true };
+      const result = await taskCollection.updateOne(filter, updateDoc, options);
+      res.json({
+        status: true,
+        message: "Successfully Change Status",
+        data: result,
+      });
     });
   } finally {
   }
